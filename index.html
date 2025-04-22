@@ -11,27 +11,29 @@
     <script>
         // Function to load the WebAssembly module from a file
         async function loadWasmModule() {
-            try {
-                // Fetch the .wasm file from the server
-                const response = await fetch('wasmModule.wasm');  // Ensure this file exists in the same directory
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch the WASM file: ${response.statusText}`);
-                }
-
-                const wasmArrayBuffer = await response.arrayBuffer();
-
-                if (wasmArrayBuffer.byteLength === 0) {
-                    throw new Error('The WASM file is empty or not correctly loaded.');
-                }
-
-                // Instantiate the WebAssembly module
-                const wasmModule = await WebAssembly.instantiate(wasmArrayBuffer);
-                return wasmModule.instance.exports;
-            } catch (error) {
-                console.error('Error loading WebAssembly module:', error);
-                throw error;
-            }
+    try {
+        const response = await fetch('wasmModule.wasm');
+        if (!response.ok) {
+            throw new Error('Failed to fetch the WASM file');
         }
+        
+        const wasmArrayBuffer = await response.arrayBuffer();
+        const wasmModule = await WebAssembly.instantiate(wasmArrayBuffer);
+        
+        // Access the exported functions
+        const { add, generateChallenge } = wasmModule.instance.exports;
+
+        // Example usage of the WebAssembly functions
+        console.log('Add result:', add(5, 3));  // Calls the add function from the C code
+        
+        const challengeSize = 1024;  // Example challenge size
+        const challenge = generateChallenge(challengeSize);
+        console.log('Challenge generated:', challenge);
+        
+    } catch (error) {
+        console.error('Error loading WebAssembly module:', error);
+    }
+}
 
         // Function to trigger passkey creation
         async function createPasskeyWithWasm() {

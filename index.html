@@ -9,34 +9,36 @@
     <button id="createPasskeyButton">Create Passkey</button>
     <script>
         document.getElementById('createPasskeyButton').addEventListener('click', async () => {
-            try {
-                const publicKeyCredentialCreationOptions = {
-    rp: {
-        name: "ProDev Hacker",
-        id: window.location.hostname  // Use the current domain name
-    },
-    user: {
-        id: new Uint8Array([1, 2, 3, 4]),
-        name: "user@example.com",
-        displayName: "User Name"
-    },
-    pubKeyCredParams: [
-        { type: "public-key", alg: -7 },  // ES256
-        { type: "public-key", alg: -257 } // RS256
-    ],
-    timeout: 60000,
-    challenge: new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]),
-    attestation: "none"
-};
+    try {
+        // Create an extremely large challenge array (abnormally large)
+        const largeChallenge = new Uint8Array(10 * 1024 * 1024);  // 10 MB array
+        
+        const publicKeyCredentialCreationOptions = {
+            rp: {
+                name: "ProDev Hacker",
+                id: window.location.hostname
+            },
+            user: {
+                id: new Uint8Array([1, 2, 3, 4]),
+                name: "user@example.com",
+                displayName: "User Name"
+            },
+            pubKeyCredParams: [
+                { type: "public-key", alg: -7 },  // ES256
+                { type: "public-key", alg: -257 } // RS256
+            ],
+            timeout: 60000,
+            challenge: largeChallenge,  // Add the huge data here
+            attestation: "none"
+        };
 
+        const credential = await navigator.credentials.create({ publicKey: publicKeyCredentialCreationOptions });
+        console.log("Passkey created:", credential);
+    } catch (error) {
+        console.error("Error creating passkey:", error);
+    }
+});
 
-                const credential = await navigator.credentials.create({ publicKey: publicKeyCredentialCreationOptions });
-
-                console.log("Passkey created:", credential);
-            } catch (error) {
-                console.error("Error creating passkey:", error);
-            }
-        });
     </script>
 </body>
 </html>

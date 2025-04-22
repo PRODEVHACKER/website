@@ -1,15 +1,19 @@
 #include <stdint.h>
+#include <stdlib.h>
 
-// Simple function that adds two integers
-int32_t add(int32_t a, int32_t b) {
-    return a + b;
-}
-
-// Simple function that creates a "large" challenge (example)
+__attribute__((export_name("generateChallenge")))  // Explicit export of the function
 uint8_t* generateChallenge(size_t size) {
     uint8_t* challenge = malloc(size);
+    if (challenge == NULL) {
+        return NULL;  // Ensure we handle memory allocation failure
+    }
     for (size_t i = 0; i < size; i++) {
         challenge[i] = (uint8_t)(i % 256);  // Fill challenge with some data
     }
     return challenge;
+}
+
+__attribute__((export_name("add")))  // Explicit export of the 'add' function
+int32_t add(int32_t a, int32_t b) {
+    return a + b;
 }

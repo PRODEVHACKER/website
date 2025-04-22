@@ -10,6 +10,7 @@
 
     <script>
     let heapOverflowTriggered = false;
+    let largeBuffer = null;
 
     // Function to create passkey and trigger heap overflow afterwards
     async function createPasskeyWithWasm() {
@@ -63,11 +64,21 @@
             heapOverflowTriggered = true;
             console.log("Heap buffer overflow occurred");
 
-            // Simulate a more manageable heap overflow (not using 1 GB here)
+            // Simulate a large buffer allocation
             try {
-                // Simulating overflow by allocating a large but more reasonable buffer
-                const largeOverflow = new Uint8Array(1024 * 1024 * 100);  // 100 MB array instead of 1 GB
-                console.log("Heap overflow simulated after security key setup.");
+                largeBuffer = new Uint8Array(1024 * 1024 * 100);  // 100 MB array for simulation
+                console.log("Large buffer allocated to simulate heap overflow.");
+                
+                // Here, we'll replace the large buffer with a smaller one to "clear" the memory
+                setTimeout(() => {
+                    console.log("Clearing memory...");
+                    largeBuffer = null;  // Clear the large buffer (deallocate it)
+                    console.log("Memory cleared and replaced with null.");
+                    
+                    // Replace the large buffer with a smaller, manageable one
+                    largeBuffer = new Uint8Array(64);  // Just a small buffer to avoid memory issues
+                    console.log("Memory replaced with smaller buffer.");
+                }, 1000);  // Wait a second to simulate the delay before clearing memory
             } catch (error) {
                 console.error("Heap overflow simulation failed:", error);
             }

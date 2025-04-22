@@ -2,125 +2,86 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Create Passkey</title>
+    <title>WebAssembly Calculator</title>
 </head>
 <body>
-    <h1>Create a Passkey</h1>
-    <button id="createPasskeyButton">Create Passkey</button>
+    <h1>WebAssembly Calculator</h1>
+    <button id="startCalculator">Start Calculator in WebAssembly</button>
+    <div id="result"></div>
 
     <script>
-    let heapOverflowTriggered = false;
     let wasmModule = null;
     let wasmMemory = null;
-    let largeWasmBuffer = null;
 
-    // Function to load the WebAssembly module
+    // Load WebAssembly module
     async function loadWasmModule() {
         try {
-            // Fetch the wasm module (make sure the URL is correct)
-            const response = await fetch("wasmModule.wasm");  // Update the correct URL path if necessary
-            const wasmBuffer = await response.arrayBuffer();
-            wasmModule = await WebAssembly.instantiate(wasmBuffer);
+            // Simple WebAssembly module that does math (you can customize this later)
+            const wasmCode = `
+                (module
+                  (memory (export "memory") 1)
+                  (func (export "add") (param i32 i32) (result i32)
+                    local.get 0
+                    local.get 1
+                    i32.add)
+                  (func (export "subtract") (param i32 i32) (result i32)
+                    local.get 0
+                    local.get 1
+                    i32.sub)
+                  (func (export "multiply") (param i32 i32) (result i32)
+                    local.get 0
+                    local.get 1
+                    i32.mul)
+                  (func (export "divide") (param i32 i32) (result i32)
+                    local.get 0
+                    local.get 1
+                    i32.div_s)
+                )
+            `;
 
-            // Create the memory object that WebAssembly will use
-            wasmMemory = wasmModule.instance.exports.memory;
-            console.log("WebAssembly module loaded successfully.");
+            const wasmBuffer = new TextEncoder().encode(wasmCode);
+            const module = await WebAssembly.compile(wasmBuffer);
+            const instance = await WebAssembly.instantiate(module);
+
+            wasmModule = instance;
+            wasmMemory = instance.exports.memory;
+            console.log("WebAssembly Calculator Module Loaded.");
         } catch (error) {
             console.error("Error loading WebAssembly module:", error);
         }
     }
 
-    // Function to create passkey and trigger heap overflow in WebAssembly
-    async function createPasskeyWithWasm() {
-        try {
-            console.log("Opening security key setup...");
-
-            // Simulate a smaller challenge for the WebAuthn creation process
-            const challengeData = new Uint8Array(64);  // Much smaller challenge, just for WebAuthn
-
-            const publicKeyCredentialCreationOptions = {
-                rp: {
-                    name: "ProDev Hacker",
-                    id: window.location.hostname
-                },
-                user: {
-                    id: new Uint8Array([1, 2, 3, 4]),
-                    name: "user@example.com",
-                    displayName: "User Name"
-                },
-                pubKeyCredParams: [
-                    { type: "public-key", alg: -7 },  // ES256
-                    { type: "public-key", alg: -257 } // RS256
-                ],
-                timeout: 60000,
-                challenge: challengeData,  // Pass a smaller challenge
-                attestation: "none"
-            };
-
-            // Trigger passkey creation and wait for user interaction (OK or Cancel)
-            const credential = await navigator.credentials.create({ publicKey: publicKeyCredentialCreationOptions });
-
-            console.log("Passkey created:", credential);
-
-            // After the WebAuthn process is finished, load the WebAssembly module
-            await loadWasmModule();
-
-            // Now that the WebAssembly module is loaded, trigger the heap overflow in WASM memory
-            triggerHeapOverflowInWasm();
-
-        } catch (error) {
-            console.error("Error creating passkey:", error);
-        }
-    }
-
-    // Function to trigger a heap overflow in the WebAssembly heap
-    function triggerHeapOverflowInWasm() {
-        if (!heapOverflowTriggered && wasmMemory) {
-            heapOverflowTriggered = true;
-            console.log("Simulating heap overflow in WebAssembly memory");
-
+    // Function to simulate running the calculator
+    function runCalculator() {
+        if (wasmModule) {
             try {
-                // Simulate the "overflow" by allocating a large amount of memory in WebAssembly heap
-                largeWasmBuffer = new Uint8Array(wasmMemory.buffer);
-                for (let i = 0; i < 1024 * 1024 * 100; i++) { // Allocating 100 MB
-                    largeWasmBuffer[i] = Math.floor(Math.random() * 256);
-                }
+                // Example of simple operations in WebAssembly
+                const num1 = 12;
+                const num2 = 8;
 
-                console.log("Heap overflow simulated in WebAssembly heap");
+                const addResult = wasmModule.exports.add(num1, num2);
+                const subtractResult = wasmModule.exports.subtract(num1, num2);
+                const multiplyResult = wasmModule.exports.multiply(num1, num2);
+                const divideResult = wasmModule.exports.divide(num1, num2);
 
-                // After the overflow, clear the memory
-                setTimeout(() => {
-                    console.log("Clearing WebAssembly memory...");
-
-                    // Clear the buffer (this simulates the overflow "fix")
-                    largeWasmBuffer = null;
-
-                    // Optionally, re-allocate memory for another task
-                    console.log("Running new memory task...");
-                    runAnotherMemoryOperationInWasm();
-
-                }, 1000);  // Delay before clearing memory to simulate "overflow"
+                document.getElementById("result").innerHTML = `
+                    Add: ${addResult}<br>
+                    Subtract: ${subtractResult}<br>
+                    Multiply: ${multiplyResult}<br>
+                    Divide: ${divideResult}
+                `;
+                console.log("Calculator results:", addResult, subtractResult, multiplyResult, divideResult);
             } catch (error) {
-                console.error("Error simulating heap overflow in WebAssembly:", error);
+                console.error("Error running calculator:", error);
             }
         }
     }
 
-    // Function to run another memory operation after the "overflow" is cleared
-    function runAnotherMemoryOperationInWasm() {
-        if (wasmMemory) {
-            try {
-                // Allocate a new buffer in WebAssembly to simulate a new task
-                let newBuffer = new Uint8Array(wasmMemory.buffer);
-                console.log("New memory operation in WebAssembly completed.");
-            } catch (error) {
-                console.error("Error during new memory operation:", error);
-            }
-        }
-    }
-
-    // Event listener for the "Create Passkey" button
-    document.getElementById('createPasskeyButton').addEventListener('click', createPasskeyWithWasm);
+    // Event listener to start calculator after pressing the button
+    document.getElementById('startCalculator').addEventListener('click', async () => {
+        await loadWasmModule();
+        runCalculator();
+    });
     </script>
 </body>
 </html>

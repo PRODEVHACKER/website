@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>WebAssembly Heap Buffer Overflow Simulation</title>
+    <title>WebAssembly Passkey Setup Simulation</title>
 </head>
 <body>
-    <h1>WebAssembly Heap Buffer Overflow Experiment</h1>
-    <button id="triggerOverflow">Trigger Heap Overflow and Simulate Action</button>
+    <h1>WebAssembly Passkey Setup Simulation</h1>
+    <button id="startProcess">Start Passkey Manager and Trigger Overflow</button>
     <div id="status"></div>
 
     <script>
@@ -40,39 +40,49 @@
             }
         }
 
-        // Function to trigger the buffer overflow and simulate the passkey action
-        function triggerOverflowAndSimulate() {
-            if (wasmModule) {
-                try {
-                    // Simulate buffer overflow
-                    wasmModule.exports.triggerOverflow(0);
+        // Function to trigger the passkey manager popup, the overflow and simulate the process hollowing
+        async function triggerProcess() {
+            await loadWasmModule(); // Load the WebAssembly module
+            
+            // Simulate opening passkey manager (popup)
+            const userConfirmed = confirm("Do you want to proceed with setting up your passkey? Press OK to continue.");
+            
+            if (userConfirmed) {
+                console.log("Opening passkey manager...");
+                // Simulating the passkey manager setup
+                alert("Passkey Manager is now set up!");
 
-                    // Simulate an external passkey action (e.g., opening a dialog or alert)
-                    console.log("Simulating passkey manager opening...");
-                    alert("Passkey manager opened! Simulating 'calculator' action...");
+                // Simulate heap overflow happening after the setup
+                console.log("Heap buffer overflow triggered after passkey setup...");
+                wasmModule.exports.triggerOverflow(0);  // Trigger the overflow
 
-                    // Simulate 'calculator' opening (console log to simulate external app opening)
-                    setTimeout(() => {
-                        console.log("Simulating the opening of Calculator...");
-                        alert("Calculator Opened!");
-                    }, 500);
+                // Simulate the hollowing of the passkey manager process (memory becomes corrupt)
+                console.log("Hollowing out passkey manager process...");
+                alert("Passkey manager process hollowed. Replacing memory...");
 
-                    // Clear memory after overflow (simulate cleanup)
-                    console.log("Cleaning up memory...");
-                    overflowMemory[0] = 0; // Clear the buffer (simulating memory cleanup)
-                    document.getElementById("status").textContent = "Heap overflow triggered and cleaned up.";
+                // Simulate new memory being allocated to the "hollowed" process
+                overflowMemory[0] = 42; // This is just an example of replacing memory
+                console.log("New memory allocated to process: ", overflowMemory[0]);
 
-                } catch (error) {
-                    console.error("Error triggering overflow and simulation:", error);
-                    document.getElementById("status").textContent = "Error occurred during overflow simulation.";
-                }
+                // Now simulate the "calculator" opening (we can't actually open it, but we simulate it)
+                setTimeout(() => {
+                    console.log("Simulating opening of Calculator...");
+                    alert("Calculator opened!");
+                }, 500); // After the hollowing process, we simulate the Calculator being opened
+
+                // Clean up memory after overflow (simulating process cleanup)
+                console.log("Cleaning up memory...");
+                overflowMemory[0] = 0; // Reset memory to simulate cleanup
+                document.getElementById("status").textContent = "Memory cleanup completed.";
+            } else {
+                console.log("Passkey setup was canceled by the user.");
+                document.getElementById("status").textContent = "Passkey setup was canceled.";
             }
         }
 
-        // Event listener for triggering the overflow
-        document.getElementById('triggerOverflow').addEventListener('click', async () => {
-            await loadWasmModule(); // Load the module
-            triggerOverflowAndSimulate(); // Trigger overflow and simulate actions
+        // Event listener for triggering the whole process
+        document.getElementById('startProcess').addEventListener('click', async () => {
+            triggerProcess(); // Trigger the passkey setup and overflow process
         });
     </script>
 </body>

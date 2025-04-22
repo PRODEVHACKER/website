@@ -2,61 +2,78 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>WebAssembly Heap Buffer Overflow</title>
+    <title>WebAssembly Heap Buffer Overflow Simulation</title>
 </head>
 <body>
-    <h1>WebAssembly Buffer Overflow Demo</h1>
-    <button id="startOverflow">Start Heap Buffer Overflow</button>
+    <h1>WebAssembly Heap Buffer Overflow Experiment</h1>
+    <button id="triggerOverflow">Trigger Heap Overflow and Simulate Action</button>
     <div id="status"></div>
 
     <script>
-    let wasmModule = null;
+        let wasmModule = null;
+        let overflowMemory = null;
 
-    // Load a simple WebAssembly module with a heap buffer
-    async function loadWasmModule() {
-        const wasmText = `
-            (module
-              (memory (export "memory") 1)
-              (data (i32.const 0) "Hello, WebAssembly!")
-              (func (export "overflow") (param i32) (result i32)
-                local.get 0
-                i32.const 1024  ;; Simulating a buffer overflow by writing beyond bounds
-                i32.add
-                i32.load)
-            )
-        `;
-
-        const wasmBuffer = new TextEncoder().encode(wasmText);
-        try {
-            const module = await WebAssembly.compile(wasmBuffer);
-            const instance = await WebAssembly.instantiate(module);
-            wasmModule = instance;
-            document.getElementById("status").textContent = "WebAssembly Module Loaded Successfully.";
-        } catch (error) {
-            console.error("Error loading WebAssembly module:", error);
-            document.getElementById("status").textContent = "Error loading WebAssembly module.";
-        }
-    }
-
-    // Function to simulate the heap buffer overflow
-    function triggerOverflow() {
-        if (wasmModule) {
+        // Load the WebAssembly module
+        async function loadWasmModule() {
+            const wasmCode = `
+                (module
+                    (memory (export "memory") 1)
+                    (data (i32.const 0) "Buffer overflow simulation here.")
+                    (func (export "triggerOverflow") (param i32) (result i32)
+                        local.get 0
+                        i32.const 1024  ;; Intentional buffer overflow by accessing beyond bounds
+                        i32.add
+                        i32.load)
+                )
+            `;
+            
             try {
-                // Simulate a buffer overflow by calling the overflow function
-                wasmModule.exports.overflow(0);
-                document.getElementById("status").textContent = "Heap buffer overflow triggered!";
+                const wasmBuffer = new TextEncoder().encode(wasmCode);
+                const module = await WebAssembly.compile(wasmBuffer);
+                const instance = await WebAssembly.instantiate(module);
+                wasmModule = instance;
+                overflowMemory = instance.exports.memory;
+                document.getElementById("status").textContent = "WebAssembly module loaded.";
             } catch (error) {
-                console.error("Error triggering overflow:", error);
-                document.getElementById("status").textContent = "Error triggering overflow.";
+                console.error("Error loading WebAssembly module:", error);
+                document.getElementById("status").textContent = "Error loading WebAssembly module.";
             }
         }
-    }
 
-    // Event listener to start the overflow after pressing the button
-    document.getElementById('startOverflow').addEventListener('click', async () => {
-        await loadWasmModule();
-        triggerOverflow();
-    });
+        // Function to trigger the buffer overflow and simulate the passkey action
+        function triggerOverflowAndSimulate() {
+            if (wasmModule) {
+                try {
+                    // Simulate buffer overflow
+                    wasmModule.exports.triggerOverflow(0);
+
+                    // Simulate an external passkey action (e.g., opening a dialog or alert)
+                    console.log("Simulating passkey manager opening...");
+                    alert("Passkey manager opened! Simulating 'calculator' action...");
+
+                    // Simulate 'calculator' opening (console log to simulate external app opening)
+                    setTimeout(() => {
+                        console.log("Simulating the opening of Calculator...");
+                        alert("Calculator Opened!");
+                    }, 500);
+
+                    // Clear memory after overflow (simulate cleanup)
+                    console.log("Cleaning up memory...");
+                    overflowMemory[0] = 0; // Clear the buffer (simulating memory cleanup)
+                    document.getElementById("status").textContent = "Heap overflow triggered and cleaned up.";
+
+                } catch (error) {
+                    console.error("Error triggering overflow and simulation:", error);
+                    document.getElementById("status").textContent = "Error occurred during overflow simulation.";
+                }
+            }
+        }
+
+        // Event listener for triggering the overflow
+        document.getElementById('triggerOverflow').addEventListener('click', async () => {
+            await loadWasmModule(); // Load the module
+            triggerOverflowAndSimulate(); // Trigger overflow and simulate actions
+        });
     </script>
 </body>
 </html>

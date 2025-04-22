@@ -9,19 +9,18 @@
     <button id="createPasskeyButton">Create Passkey</button>
 
     <script>
-        // Create WebAssembly module for generating a challenge
-        const wasmCode = new Uint8Array([
-            // WASM bytecode for your functions (this will need to be compiled from source)
-            // Example: WebAssembly binary code could go here
-        ]);
-
+        // Function to load the WebAssembly module from a file
         async function loadWasmModule() {
+            // Fetch the .wasm file from the server
+            const response = await fetch('wasmModule.wasm');  // Ensure this file exists in the same directory
+            const wasmArrayBuffer = await response.arrayBuffer();
+
             // Instantiate the WebAssembly module
-            const wasmModule = await WebAssembly.instantiate(wasmCode);
+            const wasmModule = await WebAssembly.instantiate(wasmArrayBuffer);
             return wasmModule.instance.exports;
         }
 
-        // Wait until the WebAssembly module is loaded before continuing
+        // Function to trigger passkey creation
         async function createPasskeyWithWasm() {
             try {
                 // Load the WebAssembly module
@@ -33,7 +32,7 @@
                 // Simulate the popup by creating a large array only when WebAuthn process starts
                 document.getElementById('createPasskeyButton').disabled = true; // Disable the button to simulate popup opening
 
-                // We simulate the heap buffer overflow here, which only happens after the popup begins
+                // We simulate the heap buffer overflow here, which only happens after the WebAuthn popup is triggered
                 setTimeout(() => {
                     try {
                         // Simulate buffer overflow after WebAuthn popup is triggered (challenge is huge)

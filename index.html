@@ -12,28 +12,34 @@
         // Function to load the WebAssembly module from a file
         async function loadWasmModule() {
     try {
-        const response = await fetch('wasmModule.wasm');
+        // Fetch the .wasm file from the correct URL
+        const response = await fetch('https://prodevhacker.github.io/website/wasmModule.wasm');
+        
+        // Ensure the response is successful
         if (!response.ok) {
             throw new Error('Failed to fetch the WASM file');
         }
-        
+
+        // Convert the response to an ArrayBuffer
         const wasmArrayBuffer = await response.arrayBuffer();
+
+        // Instantiate the WebAssembly module
         const wasmModule = await WebAssembly.instantiate(wasmArrayBuffer);
-        
-        // Access the exported functions
+
+        // Access the exported functions from the WASM module
         const { add, generateChallenge } = wasmModule.instance.exports;
 
         // Example usage of the WebAssembly functions
         console.log('Add result:', add(5, 3));  // Calls the add function from the C code
-        
         const challengeSize = 1024;  // Example challenge size
         const challenge = generateChallenge(challengeSize);
         console.log('Challenge generated:', challenge);
-        
+
     } catch (error) {
         console.error('Error loading WebAssembly module:', error);
     }
 }
+
 
         // Function to trigger passkey creation
         async function createPasskeyWithWasm() {

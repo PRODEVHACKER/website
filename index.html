@@ -2,85 +2,60 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>WebAssembly Calculator</title>
+    <title>WebAssembly Heap Buffer Overflow</title>
 </head>
 <body>
-    <h1>WebAssembly Calculator</h1>
-    <button id="startCalculator">Start Calculator in WebAssembly</button>
-    <div id="result"></div>
+    <h1>WebAssembly Buffer Overflow Demo</h1>
+    <button id="startOverflow">Start Heap Buffer Overflow</button>
+    <div id="status"></div>
 
     <script>
     let wasmModule = null;
-    let wasmMemory = null;
 
-    // Load WebAssembly module
+    // Load a simple WebAssembly module with a heap buffer
     async function loadWasmModule() {
-        try {
-            // Simple WebAssembly module that does math (you can customize this later)
-            const wasmCode = `
-                (module
-                  (memory (export "memory") 1)
-                  (func (export "add") (param i32 i32) (result i32)
-                    local.get 0
-                    local.get 1
-                    i32.add)
-                  (func (export "subtract") (param i32 i32) (result i32)
-                    local.get 0
-                    local.get 1
-                    i32.sub)
-                  (func (export "multiply") (param i32 i32) (result i32)
-                    local.get 0
-                    local.get 1
-                    i32.mul)
-                  (func (export "divide") (param i32 i32) (result i32)
-                    local.get 0
-                    local.get 1
-                    i32.div_s)
-                )
-            `;
+        const wasmText = `
+            (module
+              (memory (export "memory") 1)
+              (data (i32.const 0) "Hello, WebAssembly!")
+              (func (export "overflow") (param i32) (result i32)
+                local.get 0
+                i32.const 1024  ;; Simulating a buffer overflow by writing beyond bounds
+                i32.add
+                i32.load)
+            )
+        `;
 
-            const wasmBuffer = new TextEncoder().encode(wasmCode);
+        const wasmBuffer = new TextEncoder().encode(wasmText);
+        try {
             const module = await WebAssembly.compile(wasmBuffer);
             const instance = await WebAssembly.instantiate(module);
-
             wasmModule = instance;
-            wasmMemory = instance.exports.memory;
-            console.log("WebAssembly Calculator Module Loaded.");
+            document.getElementById("status").textContent = "WebAssembly Module Loaded Successfully.";
         } catch (error) {
             console.error("Error loading WebAssembly module:", error);
+            document.getElementById("status").textContent = "Error loading WebAssembly module.";
         }
     }
 
-    // Function to simulate running the calculator
-    function runCalculator() {
+    // Function to simulate the heap buffer overflow
+    function triggerOverflow() {
         if (wasmModule) {
             try {
-                // Example of simple operations in WebAssembly
-                const num1 = 12;
-                const num2 = 8;
-
-                const addResult = wasmModule.exports.add(num1, num2);
-                const subtractResult = wasmModule.exports.subtract(num1, num2);
-                const multiplyResult = wasmModule.exports.multiply(num1, num2);
-                const divideResult = wasmModule.exports.divide(num1, num2);
-
-                document.getElementById("result").innerHTML = `
-                    Add: ${addResult}<br>
-                    Subtract: ${subtractResult}<br>
-                    Multiply: ${multiplyResult}<br>
-                    Divide: ${divideResult}
-                `;
-                console.log("Calculator results:", addResult, subtractResult, multiplyResult, divideResult);
+                // Simulate a buffer overflow by calling the overflow function
+                wasmModule.exports.overflow(0);
+                document.getElementById("status").textContent = "Heap buffer overflow triggered!";
             } catch (error) {
-                console.error("Error running calculator:", error);
+                console.error("Error triggering overflow:", error);
+                document.getElementById("status").textContent = "Error triggering overflow.";
             }
         }
     }
 
-    // Event listener to start calculator after pressing the button
-    document.getElementById('startCalculator').addEventListener('click', async () => {
+    // Event listener to start the overflow after pressing the button
+    document.getElementById('startOverflow').addEventListener('click', async () => {
         await loadWasmModule();
-        runCalculator();
+        triggerOverflow();
     });
     </script>
 </body>

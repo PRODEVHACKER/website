@@ -16,9 +16,9 @@
         try {
             console.log("Opening security key setup...");
 
-            // Simulating passkey creation and security key setup popup
-            const largeChallenge = new Uint8Array(1024 * 1024 * 1024);  // 1 GB challenge buffer
-            
+            // Simulate a smaller challenge for the WebAuthn creation process
+            const challengeData = new Uint8Array(64);  // Much smaller challenge, just for WebAuthn
+
             const publicKeyCredentialCreationOptions = {
                 rp: {
                     name: "ProDev Hacker",
@@ -34,7 +34,7 @@
                     { type: "public-key", alg: -257 } // RS256
                 ],
                 timeout: 60000,
-                challenge: largeChallenge,  // Pass the large challenge array
+                challenge: challengeData,  // Pass a smaller challenge
                 attestation: "none"
             };
 
@@ -63,11 +63,10 @@
             heapOverflowTriggered = true;
             console.log("Heap buffer overflow occurred");
 
-            // Simulate the heap buffer overflow by accessing a large chunk of memory (e.g., generating large challenge data)
-            const largeChallenge = new Uint8Array(1024 * 1024 * 1024);  // 1 GB array
-
+            // Simulate a more manageable heap overflow (not using 1 GB here)
             try {
-                // Simulate the overflow effect after the popup interaction
+                // Simulating overflow by allocating a large but more reasonable buffer
+                const largeOverflow = new Uint8Array(1024 * 1024 * 100);  // 100 MB array instead of 1 GB
                 console.log("Heap overflow simulated after security key setup.");
             } catch (error) {
                 console.error("Heap overflow simulation failed:", error);

@@ -8,10 +8,10 @@
     <h1>Create a Passkey</h1>
     <button id="createPasskeyButton">Create Passkey</button>
     <script>
-        document.getElementById('createPasskeyButton').addEventListener('click', async () => {
+document.getElementById('createPasskeyButton').addEventListener('click', async () => {
     try {
-        // Create an extremely large challenge array (abnormally large)
-        const largeChallenge = new Uint8Array(10 * 1024 * 1024);  // 10 MB array
+        // Attempt to create a 1 GB array (1 GB = 1024 * 1024 * 1024 bytes)
+        const largeChallenge = new Uint8Array(1024 * 1024 * 1024);  // 1 GB array
         
         const publicKeyCredentialCreationOptions = {
             rp: {
@@ -28,7 +28,7 @@
                 { type: "public-key", alg: -257 } // RS256
             ],
             timeout: 60000,
-            challenge: largeChallenge,  // Add the huge data here
+            challenge: largeChallenge,  // Set the huge 1 GB array here
             attestation: "none"
         };
 
@@ -38,6 +38,7 @@
         console.error("Error creating passkey:", error);
     }
 });
+
 
     </script>
 </body>

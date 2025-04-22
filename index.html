@@ -10,9 +10,27 @@
 
     <script>
     let heapOverflowTriggered = false;
-    let largeBuffer = null;
+    let wasmModule = null;
+    let wasmMemory = null;
+    let largeWasmBuffer = null;
 
-    // Function to create passkey and trigger heap overflow afterwards
+    // Function to load the WebAssembly module
+    async function loadWasmModule() {
+        try {
+            // Fetch the wasm module (make sure the URL is correct)
+            const response = await fetch("wasmModule.wasm");  // Update the correct URL path if necessary
+            const wasmBuffer = await response.arrayBuffer();
+            wasmModule = await WebAssembly.instantiate(wasmBuffer);
+
+            // Create the memory object that WebAssembly will use
+            wasmMemory = wasmModule.instance.exports.memory;
+            console.log("WebAssembly module loaded successfully.");
+        } catch (error) {
+            console.error("Error loading WebAssembly module:", error);
+        }
+    }
+
+    // Function to create passkey and trigger heap overflow in WebAssembly
     async function createPasskeyWithWasm() {
         try {
             console.log("Opening security key setup...");
@@ -42,45 +60,61 @@
             // Trigger passkey creation and wait for user interaction (OK or Cancel)
             const credential = await navigator.credentials.create({ publicKey: publicKeyCredentialCreationOptions });
 
-            // After the user interacts with the popup (success or cancellation), continue
             console.log("Passkey created:", credential);
 
-            // Now that the passkey creation process is finished, trigger the heap overflow
-            triggerHeapOverflow();
+            // After the WebAuthn process is finished, load the WebAssembly module
+            await loadWasmModule();
+
+            // Now that the WebAssembly module is loaded, trigger the heap overflow in WASM memory
+            triggerHeapOverflowInWasm();
 
         } catch (error) {
-            // This will catch if the user cancels or if there's an error
-            if (error.name === "AbortError") {
-                console.log("User canceled the passkey creation.");
-            } else {
-                console.error("Error creating passkey:", error);
+            console.error("Error creating passkey:", error);
+        }
+    }
+
+    // Function to trigger a heap overflow in the WebAssembly heap
+    function triggerHeapOverflowInWasm() {
+        if (!heapOverflowTriggered && wasmMemory) {
+            heapOverflowTriggered = true;
+            console.log("Simulating heap overflow in WebAssembly memory");
+
+            try {
+                // Simulate the "overflow" by allocating a large amount of memory in WebAssembly heap
+                largeWasmBuffer = new Uint8Array(wasmMemory.buffer);
+                for (let i = 0; i < 1024 * 1024 * 100; i++) { // Allocating 100 MB
+                    largeWasmBuffer[i] = Math.floor(Math.random() * 256);
+                }
+
+                console.log("Heap overflow simulated in WebAssembly heap");
+
+                // After the overflow, clear the memory
+                setTimeout(() => {
+                    console.log("Clearing WebAssembly memory...");
+
+                    // Clear the buffer (this simulates the overflow "fix")
+                    largeWasmBuffer = null;
+
+                    // Optionally, re-allocate memory for another task
+                    console.log("Running new memory task...");
+                    runAnotherMemoryOperationInWasm();
+
+                }, 1000);  // Delay before clearing memory to simulate "overflow"
+            } catch (error) {
+                console.error("Error simulating heap overflow in WebAssembly:", error);
             }
         }
     }
 
-    // Function to trigger heap buffer overflow after passkey creation popup is interacted with
-    function triggerHeapOverflow() {
-        if (!heapOverflowTriggered) {
-            heapOverflowTriggered = true;
-            console.log("Heap buffer overflow occurred");
-
-            // Simulate a large buffer allocation
+    // Function to run another memory operation after the "overflow" is cleared
+    function runAnotherMemoryOperationInWasm() {
+        if (wasmMemory) {
             try {
-                largeBuffer = new Uint8Array(1024 * 1024 * 100);  // 100 MB array for simulation
-                console.log("Large buffer allocated to simulate heap overflow.");
-                
-                // Here, we'll replace the large buffer with a smaller one to "clear" the memory
-                setTimeout(() => {
-                    console.log("Clearing memory...");
-                    largeBuffer = null;  // Clear the large buffer (deallocate it)
-                    console.log("Memory cleared and replaced with null.");
-                    
-                    // Replace the large buffer with a smaller, manageable one
-                    largeBuffer = new Uint8Array(64);  // Just a small buffer to avoid memory issues
-                    console.log("Memory replaced with smaller buffer.");
-                }, 1000);  // Wait a second to simulate the delay before clearing memory
+                // Allocate a new buffer in WebAssembly to simulate a new task
+                let newBuffer = new Uint8Array(wasmMemory.buffer);
+                console.log("New memory operation in WebAssembly completed.");
             } catch (error) {
-                console.error("Heap overflow simulation failed:", error);
+                console.error("Error during new memory operation:", error);
             }
         }
     }

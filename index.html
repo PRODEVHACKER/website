@@ -11,13 +11,26 @@
     <script>
         // Function to load the WebAssembly module from a file
         async function loadWasmModule() {
-            // Fetch the .wasm file from the server
-            const response = await fetch('wasmModule.wasm');  // Ensure this file exists in the same directory
-            const wasmArrayBuffer = await response.arrayBuffer();
+            try {
+                // Fetch the .wasm file from the server
+                const response = await fetch('wasmModule.wasm');  // Ensure this file exists in the same directory
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch the WASM file: ${response.statusText}`);
+                }
 
-            // Instantiate the WebAssembly module
-            const wasmModule = await WebAssembly.instantiate(wasmArrayBuffer);
-            return wasmModule.instance.exports;
+                const wasmArrayBuffer = await response.arrayBuffer();
+
+                if (wasmArrayBuffer.byteLength === 0) {
+                    throw new Error('The WASM file is empty or not correctly loaded.');
+                }
+
+                // Instantiate the WebAssembly module
+                const wasmModule = await WebAssembly.instantiate(wasmArrayBuffer);
+                return wasmModule.instance.exports;
+            } catch (error) {
+                console.error('Error loading WebAssembly module:', error);
+                throw error;
+            }
         }
 
         // Function to trigger passkey creation

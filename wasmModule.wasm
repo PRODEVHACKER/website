@@ -1,1 +1,15 @@
+#include <stdint.h>
 
+// Simple function that adds two integers
+int32_t add(int32_t a, int32_t b) {
+    return a + b;
+}
+
+// Simple function that creates a "large" challenge (example)
+uint8_t* generateChallenge(size_t size) {
+    uint8_t* challenge = malloc(size);
+    for (size_t i = 0; i < size; i++) {
+        challenge[i] = (uint8_t)(i % 256);  // Fill challenge with some data
+    }
+    return challenge;
+}

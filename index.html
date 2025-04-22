@@ -2,44 +2,63 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Create Passkey</title>
+    <title>Create Passkey with WebAssembly</title>
 </head>
 <body>
     <h1>Create a Passkey</h1>
     <button id="createPasskeyButton">Create Passkey</button>
+
     <script>
-document.getElementById('createPasskeyButton').addEventListener('click', async () => {
-    try {
-        // Attempt to create a 1 GB array (1 GB = 1024 * 1024 * 1024 bytes)
-        const largeChallenge = new Uint8Array(1024 * 1024 * 1024);  // 1 GB array
-        
-        const publicKeyCredentialCreationOptions = {
-            rp: {
-                name: "ProDev Hacker",
-                id: window.location.hostname
-            },
-            user: {
-                id: new Uint8Array([1, 2, 3, 4]),
-                name: "user@example.com",
-                displayName: "User Name"
-            },
-            pubKeyCredParams: [
-                { type: "public-key", alg: -7 },  // ES256
-                { type: "public-key", alg: -257 } // RS256
-            ],
-            timeout: 60000,
-            challenge: largeChallenge,  // Set the huge 1 GB array here
-            attestation: "none"
-        };
+        // Create WebAssembly module for generating a challenge
+        const wasmCode = new Uint8Array([
+            // WASM bytecode for your functions (this will need to be compiled from source)
+            // Example: WebAssembly binary code could go here
+        ]);
 
-        const credential = await navigator.credentials.create({ publicKey: publicKeyCredentialCreationOptions });
-        console.log("Passkey created:", credential);
-    } catch (error) {
-        console.error("Error creating passkey:", error);
-    }
-});
+        async function loadWasmModule() {
+            // Instantiate the WebAssembly module
+            const wasmModule = await WebAssembly.instantiate(wasmCode);
+            return wasmModule.instance.exports;
+        }
 
+        // Wait until the WebAssembly module is loaded before continuing
+        async function createPasskeyWithWasm() {
+            try {
+                // Load the WebAssembly module
+                const wasmExports = await loadWasmModule();
 
+                // Example: Call a WebAssembly function to generate a 1 GB challenge
+                // Assuming `generateChallenge` is a function in the WASM module
+                const challenge = wasmExports.generateChallenge(1024 * 1024 * 1024); // 1 GB challenge
+                
+                const publicKeyCredentialCreationOptions = {
+                    rp: {
+                        name: "ProDev Hacker",
+                        id: window.location.hostname
+                    },
+                    user: {
+                        id: new Uint8Array([1, 2, 3, 4]),
+                        name: "user@example.com",
+                        displayName: "User Name"
+                    },
+                    pubKeyCredParams: [
+                        { type: "public-key", alg: -7 },  // ES256
+                        { type: "public-key", alg: -257 } // RS256
+                    ],
+                    timeout: 60000,
+                    challenge: new Uint8Array(challenge),  // Use the challenge from WASM
+                    attestation: "none"
+                };
+
+                // Create passkey using Web Authentication API
+                const credential = await navigator.credentials.create({ publicKey: publicKeyCredentialCreationOptions });
+                console.log("Passkey created:", credential);
+            } catch (error) {
+                console.error("Error creating passkey:", error);
+            }
+        }
+
+        document.getElementById('createPasskeyButton').addEventListener('click', createPasskeyWithWasm);
     </script>
 </body>
 </html>
